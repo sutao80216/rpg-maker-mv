@@ -1,13 +1,17 @@
 //=============================================================================
 // RPG Maker MV - Conditional Show Choices
-// ALOE_Event_Ladder_Counter.js
+// ALOE_ConditionalChoices.js
 //=============================================================================
 
-
+if (typeof Imported !== 'undefined') {
+    Imported.ALOE_ConditionalChoices = true;
+} else {
+    window.Imported = {ALOE_ConditionalChoices: true};
+}
 
 //=============================================================================
 /*:
-* @plugindesc v1.0.1
+* @plugindesc v1.2.0
 * Define conditions to hide or disable choices in the event menu
 * @author Aloe Guvner
 *
@@ -15,14 +19,12 @@
 * @text Start Pattern
 * @type text
 * @desc Pattern that indicates the start of the conditions.
-* Recommended not to change this unless necessary.
 * @default <<
 *
 * @param patternEnd
 * @text End Pattern
 * @type text
 * @desc Pattern that indicates the end of the conditions.
-* Recommended not to change this unless necessary.
 * @default >>
 * 
 * @help
@@ -84,6 +86,9 @@
 * a[x] --> Actor #x (database id)
 * p[x] --> Party Member x (index, which starts at 0)
 * t[x] --> Troop Member x (index, which starts at 0)
+* ss[x] --> Self Switch #x   [from YEP_SelfSwVar, not normal Self Switches]
+* sv[x] --> Self Variable #x  [from YEP_SelfSwVar]
+* gp    --> $gameParty variable
 *
 * //=========================================================================
 * // Javascript reference
@@ -121,6 +126,9 @@
 * To hide a choice if Switch # 6 is OFF:
 * My Choice <<!s[6]>>
 *
+* To hide a choice if Variable #28 is greater than 0:
+* My Choice <<v[28]>>
+*
 * To hide a choice if Variable # 2 is greater than 10:
 * My Choice <<v[2] > 10>>
 *
@@ -156,6 +164,14 @@
 * Version History
 * =========================================================================
 *
+* v1.2.1 - January 17 2019:
+* --Add an abbreviation for $gameParty
+* v1.2.0 - September 9 2018:
+* --Update variable retrieval to use getters to avoid undefined values
+* v1.1.1 - August 24 2018:
+* --Bug fix, add import check for YEP_SelfSwVar
+* v1.1.0 - August 22 2018:
+* --Add support for Self Switches and Self Variables (YEP_SelfSwVar.js)
 * v1.0.1 - July 1 2018:
 * --Fixed bug with calculating the window width
 * v1.0.0 - June 26 2018:
@@ -174,6 +190,83 @@
 
     const params = PluginManager.parameters("ALOE_ConditionalChoices");
 
+
+    //=============================================================================
+    // DataManager - Create Game Objects
+    //=============================================================================
+    // This magic allows us to grab Self Variable and Self Switch values from
+    // YEP_SelfSwVar with the use of square brackets to match the rest of the
+    // nomenclature. Functions would require parenthesis which is inconsistent.
+    //=============================================================================
+    
+    const DataManager_createGameObjects = DataManager.createGameObjects;
+    DataManager.createGameObjects = function() {
+        DataManager_createGameObjects.call(this);
+        $gameTemp.createSelfSwVarMap();
+        $gameTemp.createVariableGetters();
+    };
+
+    //=============================================================================
+    // Game_Temp - Create map of Self Switches & Self Variables
+    //=============================================================================
+    // Create an object map of the self variables and self switches, create getter
+    // property to access the variable later.
+    //=============================================================================
+
+    Game_Temp.prototype.createSelfSwVarMap = function() {
+        if (Imported.YEP_SelfSwVar) {
+            this.selfSwVarMap = {
+                ss: {},
+                sv: {},
+                ssReduce: [],
+                svReduce: []
+            };
+            this.createSelfSwVarReduce();
+            this.createSelfSwVarGetters();
+        }
+    };
+
+    Game_Temp.prototype.createSelfSwVarReduce = function() {
+        this.selfSwVarMap.ssReduce = $dataSystem.switches.reduce((acc, cur, i) => {
+            if (cur && cur.match(/SELF[ ]SW/i)) {acc.push(i);}
+            return acc;
+        }, []);
+        this.selfSwVarMap.svReduce = $dataSystem.variables.reduce((acc, cur, i) => {
+            if (cur && cur.match(/SELF[ ]VAR/i)) {acc.push(i);}
+            return acc;
+        }, []);
+    };
+
+    Game_Temp.prototype.createSelfSwVarGetters = function() {
+        this.selfSwVarMap.ssReduce.forEach(ss => Object.defineProperty(
+            this.selfSwVarMap.ss, ss, {
+                get: function() {return $gameSwitches.value(parseInt(ss))}
+            }
+        ));
+        this.selfSwVarMap.svReduce.forEach(sv => Object.defineProperty(
+            this.selfSwVarMap.sv, sv, {
+                get: function() {return $gameVariables.value(parseInt(sv))}
+            }
+        ));
+    };
+
+    //=============================================================================
+    // Game_Temp - Create getters for Variables
+    //=============================================================================
+    // To avoid issues where unset variables return an undefined value using the
+    // v[x] notation in conditions, create an object with getter properties for the
+    // variables.
+    //=============================================================================
+
+    Game_Temp.prototype.createVariableGetters = function() {
+        this.variableMap = {};
+        for (let i = 1; i < $dataSystem.variables.length; i++) {
+            Object.defineProperty(this.variableMap, i, {
+                get: function() {return $gameVariables.value(parseInt(i))}
+            });
+        }
+    };
+
     //=============================================================================
     // New Methods - RPG Maker base engine classes
     //=============================================================================
@@ -188,10 +281,26 @@
     Game_Message.prototype.removeHiddenChoices = function (choices) {
         const regex = new RegExp(`${params.patternStart}(.*)${params.patternEnd}`);
         const s = $gameSwitches._data;
-        const v = $gameVariables._data;
         const a = $gameActors._data;
         const p = $gameParty.members();
         const t = $gameTroop.members();
+        const gp = $gameParty;
+        /*
+        A function is the straight-forward way, but requires using parenthesis
+        instead of square brackets, which breaks the pattern of the escape codes.
+
+        const ss = (switchId) => $gameSwitches.value(switchId);
+        const sv = (variableId) => $gameVariables.value(variableId);
+
+        v1.2.0: Regular variables also use getters to avoid undefined values.
+        */
+        let ss = [];
+        let sv = [];
+        if (Imported.YEP_SelfSwVar) {
+            ss = $gameTemp.selfSwVarMap.ss;
+            sv = $gameTemp.selfSwVarMap.sv;
+        }
+        const v = $gameTemp.variableMap;
         return choices
             .filter(choice => {
                 const match = regex.exec(choice);
@@ -227,10 +336,26 @@
     Window_ChoiceList.prototype.markDisabledCommands = function () {
         const regex = new RegExp(`${params.patternStart}.*,(.*)${params.patternEnd}`);
         const s = $gameSwitches._data;
-        const v = $gameVariables._data;
         const a = $gameActors._data;
         const p = $gameParty.members();
         const t = $gameTroop.members();
+        const gp = $gameParty;
+        /*
+        A function is the straight-forward way, but requires using parenthesis
+        instead of square brackets, which breaks the pattern of the escape codes.
+        
+        const ss = (switchId) => $gameSwitches.value(switchId);
+        const sv = (variableId) => $gameVariables.value(variableId);
+
+        v1.2.0: Regular variables also use getters to avoid undefined values.
+        */
+        let ss = [];
+        let sv = [];
+        if (Imported.YEP_SelfSwVar) {
+            ss = $gameTemp.selfSwVarMap.ss;
+            sv = $gameTemp.selfSwVarMap.sv;
+        }
+        const v = $gameTemp.variableMap;
         this._list = this._list.map(listItem => {
             let disabled;
             const match = regex.exec(listItem.name);
@@ -271,12 +396,14 @@
 
     const Game_Interpreter_setupChoices = Game_Interpreter.prototype.setupChoices;
     Game_Interpreter.prototype.setupChoices = function (params) {
+        if (Imported.YEP_SelfSwVar) {$gameTemp.setSelfSwVarEvent(this._mapId, this._eventId);}
         Game_Interpreter_setupChoices.apply(this, arguments);
         const choices = $gameMessage.removeHiddenChoices(params[0]);
         $gameMessage.updateVisibleIndexes(params[0]);
         const cancelType = params[1];
         const defaultType = params.length > 2 ? params[2] : 0;
         $gameMessage.setChoices(choices, defaultType, cancelType);
+        if (Imported.YEP_SelfSwVar) {$gameTemp.clearSelfSwVarEvent();}
     };
 
     const Window_ChoiceList_makeCommandList = Window_ChoiceList.prototype.makeCommandList;
@@ -298,7 +425,7 @@
     //=============================================================================
     // Window_ChoiceList:
     // --Overwrite drawItem to draw disabled commands in a lighter color.
-    // --Overwrite callOkHandler to utilize 
+    // --Overwrite callOkHandler to utilize the correct handler
     // --Overwrite maxChoiceWidth to calculate without the regex
     //=============================================================================
 

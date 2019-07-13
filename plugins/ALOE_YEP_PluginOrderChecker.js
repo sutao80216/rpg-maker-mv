@@ -281,46 +281,13 @@
 
 				//=============================================================================
 				// Generate the list of all YEP Plugins in the correct order, known as the 'key'.
-				// A template to consume an API is included, although there is no API to use.
-				// If Yanfly develops an API to provide the order of plugins from their website,
-				// this could be modified.
 				//
 				// Otherwise, the ordered 'key' was manually determined from the Yanfly website
-				// on May 11, 2018.
+				// on December 4, 2018.
 				//=============================================================================
 
 				var orderedKey = function orderedKey() {
-								//At this time there is no API. Always use the manual key.
-								if (false) {
-												try {
-																return apiKey();
-												} catch (e) {
-																console.log("API Error:\n" + e + "\nRetrieving plugin order manually.");
-																return manualKey();
-												}
-								} else {
-												return manualKey();
-								}
-				};
-
-				var apiKey = function apiKey() {
-								// No API exists to gather this data from the Yanfly website.
-								// If such an API existed, this template could be used to consume it.
-								// This function is not currently used.
-								var request = new XMLHttpRequest();
-								var url = "http://api.yanfly.moe/yep?q=" + api;
-
-								request.onreadystatechange = function () {
-												if (this.readyState === 4) {
-																if (this.status === 200) {
-																				var response = JSON.parse(this.responseText);
-																				//A function to cleanse the response.
-																				return cleanseResponse(response);
-																} else {
-																				//API error.
-																}
-												}
-								};
+								return manualKey();
 				};
 
 				var manualKey = function manualKey() {
@@ -338,13 +305,13 @@
 								//===Status Menu Plugins
 								"YEP_StatusMenuCore", "YEP_X_ActorVariables", "YEP_X_BattleStatistics", "YEP_X_MoreStatusPages", "YEP_X_ProfileStatusPage",
 								//===Gameplay Plugins===
-								"YEP_AutoPassiveStates", "YEP_X_PassiveAuras", "YEP_Z_PassiveCases", "YEP_EnemyLevels", "YEP_X_DifficultySlider", "YEP_X_EnemyBaseParam", "YEP_EnhancedTP", "YEP_X_MoreTPModes1", "YEP_X_MoreTPModes2", "YEP_X_MoreTPModes3", "YEP_X_MoreTPModes4", "YEP_EquipBattleSkills", "YEP_X_EBSAllowedTypes", "YEP_X_EquipSkillTiers", "YEP_JobPoints", "YEP_PartySystem", "YEP_X_ActorPartySwitch", "YEP_RowFormation", "YEP_StealSnatch",
+								"YEP_AutoPassiveStates", "YEP_X_PassiveAuras", "YEP_Z_PassiveCases", "YEP_EnemyLevels", "YEP_X_DifficultySlider", "YEP_X_EnemyBaseParam", "YEP_EnhancedTP", "YEP_X_MoreTPModes1", "YEP_X_MoreTPModes2", "YEP_X_MoreTPModes3", "YEP_X_MoreTPModes4", "YEP_EquipBattleSkills", "YEP_X_EBSAllowedTypes", "YEP_X_EquipSkillTiers", "YEP_JobPoints", "YEP_PartySystem", "YEP_X_ActorPartySwitch", "YEP_RowFormation", "YEP_StatAllocation", "YEP_StealSnatch",
 								//===Movement Plugins===
 								"YEP_MoveRouteCore", "YEP_X_ExtMovePack1",
 								//===Quest Plugins===
 								"YEP_QuestJournal", "YEP_X_MapQuestWindow", "YEP_X_MoreQuests1", "YEP_X_MoreQuests2", "YEP_X_MoreQuests3", "YEP_X_MoreQuests4", "YEP_X_MoreQuests5", "YEP_X_MoreQuests6", "YEP_X_MoreQuests7", "YEP_X_MoreQuests8", "YEP_X_MoreQuests9", "YEP_X_MoreQuests10",
 								//===Utility Plugins===
-								"YEP_AnimateTilesOption", "YEP_AutoSwitches", "YEP_BaseTroopEvents", "YEP_BattleAniSpeedOpt", "YEP_ButtonCommonEvents", "YEP_CallEvent", "YEP_CommonEventMenu", "YEP_X_CEMSetupPack1", "YEP_X_CEMSetupPack2", "YEP_CreditsPage", "YEP_DashToggle", "YEP_EventEncounterAid", "YEP_EventChasePlayer", "YEP_X_EventChaseStealth", "YEP_EventMiniLabel", "YEP_EventTimerControl", "YEP_ExternalLinks", "YEP_FloorDamage", "YEP_FootstepSounds", "YEP_FpsSynchOption", "YEP_GabWindow", "YEP_GridFreeDoodads", "YEP_X_ExtDoodadPack1", "YEP_HelpFileAccess", "YEP_IconBalloons", "YEP_KeyboardConfig", "YEP_MainMenuVar", "YEP_MapGoldWindow", "YEP_MapSelectEquip", "YEP_MapSelectSkill", "YEP_MapStatusWindow", "YEP_MusicMenu", "YEP_PictureCommonEvents", "YEP_RegionBattlebacks", "YEP_RegionEvents", "YEP_RegionRestrictions", "YEP_X_VehicleRestrict", "YEP_RepelLureEncounters", "YEP_SaveEventLocations", "YEP_ScaleSprites", "YEP_SectionedGauges", "YEP_SegmentedGauges", "YEP_SlipperyTiles", "YEP_SmartJump", "YEP_StopMapMovement", "YEP_SwapEnemies", "YEP_UtilityCommonEvents",
+								"YEP_AnimateTilesOption", "YEP_AutoSwitches", "YEP_BaseTroopEvents", "YEP_BattleAniSpeedOpt", "YEP_ButtonCommonEvents", "YEP_CallEvent", "YEP_CommonEventMenu", "YEP_X_CEMSetupPack1", "YEP_X_CEMSetupPack2", "YEP_CreditsPage", "YEP_DashToggle", "YEP_EventEncounterAid", "YEP_EventChasePlayer", "YEP_X_EventChaseStealth", "YEP_EventMiniLabel", "YEP_EventSpriteOffset", "YEP_EventTimerControl", "YEP_ExternalLinks", "YEP_FloorDamage", "YEP_FootstepSounds", "YEP_FpsSynchOption", "YEP_GabWindow", "YEP_GridFreeDoodads", "YEP_X_ExtDoodadPack1", "YEP_HelpFileAccess", "YEP_IconBalloons", "YEP_KeyboardConfig", "YEP_MainMenuVar", "YEP_MapGoldWindow", "YEP_MapSelectEquip", "YEP_MapSelectSkill", "YEP_MapStatusWindow", "YEP_MusicMenu", "YEP_PictureCommonEvents", "YEP_RegionBattlebacks", "YEP_RegionEvents", "YEP_RegionRestrictions", "YEP_X_VehicleRestrict", "YEP_RepelLureEncounters", "YEP_SaveEventLocations", "YEP_ScaleSprites", "YEP_SectionedGauges", "YEP_SegmentedGauges", "YEP_SlipperyTiles", "YEP_SmartJump", "YEP_StopMapMovement", "YEP_SwapEnemies", "YEP_UtilityCommonEvents",
 								//===Dragonbones===
 								"KELYEP_DragonBones",
 								//===Misc Plugins===
